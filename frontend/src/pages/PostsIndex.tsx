@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { fetchPosts, type PostListItem } from '../api/posts'
+import { BlogPostPreview } from '../components/BlogPostPreview'
 
 export function PostsIndex() {
   const [posts, setPosts] = useState<PostListItem[] | null>(null)
@@ -48,77 +48,7 @@ export function PostsIndex() {
           }}
         >
           {sorted.map((p) => (
-            <li
-              key={p.id}
-              style={{
-                border: '1px solid #ddd',
-                borderRadius: 12,
-                overflow: 'hidden',
-                background: '#fff',
-                display: 'grid',
-              }}
-            >
-              {p.featured_image ? (
-                <Link to={`/posts/${p.slug}`} style={{ display: 'block' }}>
-                  <img
-                    src={p.featured_image}
-                    alt={p.featured_image_caption ?? p.title}
-                    loading="lazy"
-                    style={{
-                      width: '100%',
-                      height: 170,
-                      objectFit: 'cover',
-                      display: 'block',
-                      background: '#f3f3f3',
-                    }}
-                  />
-                </Link>
-              ) : null}
-
-              <div style={{ padding: 14, display: 'grid', gap: 10 }}>
-                <div style={{ display: 'grid', gap: 6 }}>
-                  <Link
-                    to={`/posts/${p.slug}`}
-                    style={{ fontWeight: 800, fontSize: 18, color: 'inherit', textDecoration: 'none' }}
-                  >
-                    {p.title}
-                  </Link>
-                  <div style={{ opacity: 0.7, fontSize: 13 }}>
-                    {p.published_at ?? 'Unpublished'} · {p.read_time}
-                    {p.author ? ` · ${p.author.name}` : ''}
-                  </div>
-                </div>
-
-                {p.summary ? (
-                  <p style={{ margin: 0, lineHeight: 1.5 }}>
-                    {p.summary}
-                  </p>
-                ) : (
-                  <p style={{ margin: 0, opacity: 0.7, lineHeight: 1.5 }}>
-                    No synopsis available.
-                  </p>
-                )}
-
-                <div>
-                  <Link
-                    to={`/posts/${p.slug}`}
-                    style={{
-                      display: 'inline-block',
-                      padding: '8px 12px',
-                      borderRadius: 10,
-                      border: '1px solid #111',
-                      background: '#111',
-                      color: '#fff',
-                      fontWeight: 700,
-                      textDecoration: 'none',
-                    }}
-                    aria-label={`View post: ${p.title}`}
-                  >
-                    View post
-                  </Link>
-                </div>
-              </div>
-            </li>
+            <BlogPostPreview key={p.id} post={p} />
           ))}
         </ul>
       )}
