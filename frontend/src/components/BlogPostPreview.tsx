@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { PostListItem } from '../api/posts'
+import { Button } from './Button'
 
 export function BlogPostPreview({ post }: { post: PostListItem }) {
   return (
@@ -76,22 +77,9 @@ export function PostSynopsis({ post }: { post: Pick<PostListItem, 'summary'> }) 
 
 export function ReadMoreButton({ post }: { post: Pick<PostListItem, 'slug' | 'title'> }) {
   return (
-    <Link
-      to={`/posts/${post.slug}`}
-      style={{
-        display: 'inline-block',
-        padding: '8px 12px',
-        borderRadius: 10,
-        border: '1px solid #111',
-        background: '#111',
-        color: '#fff',
-        fontWeight: 700,
-        textDecoration: 'none',
-      }}
-      aria-label={`Read more: ${post.title}`}
-    >
+    <Button to={`/posts/${post.slug}`} aria-label={`Read more: ${post.title}`}>
       Read more
-    </Link>
+    </Button>
   )
 }
 
