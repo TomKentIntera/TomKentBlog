@@ -37,18 +37,28 @@ jobs:
           cp -r frontend/dist/* backend/public/
 
       - name: Setup SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          # Write SSH key - use echo to preserve the exact format from the secret
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          # Write SSH key using environment variable (better handling of multiline secrets)
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           # Verify key file was created correctly (check first and last lines without exposing content)
           echo "Key file created. First line: $(head -1 ~/.ssh/deploy_key)"
           echo "Last line: $(tail -1 ~/.ssh/deploy_key)"
           echo "Key file size: $(wc -c < ~/.ssh/deploy_key) bytes"
           echo "Key file line count: $(wc -l < ~/.ssh/deploy_key) lines"
+          # Verify key file is readable by SSH
+          if ssh-keygen -l -f ~/.ssh/deploy_key > /dev/null 2>&1; then
+            echo "SSH key format is valid"
+            ssh-keygen -l -f ~/.ssh/deploy_key
+          else
+            echo "ERROR: SSH key format is invalid"
+            exit 1
+          fi
           # Add host to known_hosts
           touch ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
