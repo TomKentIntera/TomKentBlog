@@ -1,8 +1,6 @@
 name: Deploy Application
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -50,7 +48,21 @@ jobs:
       - name: Deploy Backend Files via rsync
         run: |
           set -euo pipefail
-          rsync -az --delete \
+          DEPLOY_PATH="${{ secrets.DEPLOY_BACKEND_PATH }}"
+          # Validate that path is absolute and not empty
+          if [[ ! "$DEPLOY_PATH" =~ ^/ ]]; then
+            echo "Error: DEPLOY_BACKEND_PATH must be an absolute path (starting with /)"
+            exit 1
+          fi
+          if [[ -z "$DEPLOY_PATH" ]]; then
+            echo "Error: DEPLOY_BACKEND_PATH is empty"
+            exit 1
+          fi
+          # Remove trailing slash for consistent rsync behavior
+          DEPLOY_PATH="${DEPLOY_PATH%/}"
+          echo "Deploying to: $DEPLOY_PATH"
+          # Use explicit paths to ensure we only sync to the target directory
+          rsync -avz --delete \
             --exclude='.git' \
             --exclude='node_modules' \
             --exclude='vendor' \
@@ -61,26 +73,32 @@ jobs:
             --exclude='storage/framework/views/*' \
             -e "ssh -p ${{ secrets.DEPLOY_PORT || 22 }} -i ~/.ssh/id_ed25519" \
             ./backend/ \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_BACKEND_PATH }}/"
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${DEPLOY_PATH}/"
 
       - name: Install Composer Dependencies
         run: |
           set -euo pipefail
+          DEPLOY_PATH="${{ secrets.DEPLOY_BACKEND_PATH }}"
+          DEPLOY_PATH="${DEPLOY_PATH%/}"
           ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            "cd ${{ secrets.DEPLOY_BACKEND_PATH }} && composer install --no-dev --optimize-autoloader --no-interaction"
+            "cd ${DEPLOY_PATH} && composer install --no-dev --optimize-autoloader --no-interaction"
 
       - name: Run Migrations
         run: |
           set -euo pipefail
+          DEPLOY_PATH="${{ secrets.DEPLOY_BACKEND_PATH }}"
+          DEPLOY_PATH="${DEPLOY_PATH%/}"
           ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            "cd ${{ secrets.DEPLOY_BACKEND_PATH }} && php artisan migrate --force"
+            "cd ${DEPLOY_PATH} && php artisan migrate --force"
 
       - name: Clear and Cache Laravel
         run: |
           set -euo pipefail
+          DEPLOY_PATH="${{ secrets.DEPLOY_BACKEND_PATH }}"
+          DEPLOY_PATH="${DEPLOY_PATH%/}"
           ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            "cd ${{ secrets.DEPLOY_BACKEND_PATH }} && php artisan config:cache && php artisan route:cache && php artisan view:cache"
+            "cd ${DEPLOY_PATH} && php artisan config:cache && php artisan route:cache && php artisan view:cache"
 
