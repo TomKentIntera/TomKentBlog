@@ -49,6 +49,14 @@ jobs:
           touch ~/.ssh/known_hosts
           ssh-keyscan -p "${{ secrets.DEPLOY_PORT || 22 }}" -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
 
+      - name: Test SSH Connection
+        run: |
+          set -euo pipefail
+          echo "Testing SSH connection..."
+          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
+            "${{ vars.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "echo 'SSH connection successful!' && pwd && ls -la ~/.ssh/ 2>/dev/null || echo 'No .ssh directory'"
+
       - name: Deploy Backend Files via rsync
         run: |
           set -euo pipefail
@@ -75,7 +83,7 @@ jobs:
             --exclude='storage/framework/views/*' \
             -e "ssh -p ${{ secrets.DEPLOY_PORT || 22 }} -i ~/.ssh/id_ed25519" \
             ./backend/ \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${DEPLOY_PATH}/"
+            "${{ vars.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${DEPLOY_PATH}/"
 
       - name: Install Composer Dependencies
         run: |
@@ -83,7 +91,7 @@ jobs:
           DEPLOY_PATH="${{ vars.DEPLOY_BACKEND_PATH }}"
           DEPLOY_PATH="${DEPLOY_PATH%/}"
           ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "${{ vars.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "cd ${DEPLOY_PATH} && composer install --no-dev --optimize-autoloader --no-interaction"
 
       - name: Run Migrations
@@ -92,7 +100,7 @@ jobs:
           DEPLOY_PATH="${{ vars.DEPLOY_BACKEND_PATH }}"
           DEPLOY_PATH="${DEPLOY_PATH%/}"
           ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "${{ vars.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "cd ${DEPLOY_PATH} && php artisan migrate --force"
 
       - name: Clear and Cache Laravel
@@ -101,5 +109,5 @@ jobs:
           DEPLOY_PATH="${{ vars.DEPLOY_BACKEND_PATH }}"
           DEPLOY_PATH="${DEPLOY_PATH%/}"
           ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "${{ vars.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "cd ${DEPLOY_PATH} && php artisan config:cache && php artisan route:cache && php artisan view:cache"
