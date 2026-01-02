@@ -131,15 +131,6 @@ jobs:
             "${{ vars.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "cd ${DEPLOY_PATH} && php artisan storage:link || true"
 
-      - name: Create Storage Directories
-        run: |
-          set -euo pipefail
-          DEPLOY_PATH="${{ vars.DEPLOY_BACKEND_PATH }}"
-          DEPLOY_PATH="${DEPLOY_PATH%/}"
-          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
-            "${{ vars.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            "mkdir -p ${DEPLOY_PATH}/storage/app/public/canvas ${DEPLOY_PATH}/storage/logs ${DEPLOY_PATH}/storage/framework/cache/data ${DEPLOY_PATH}/storage/framework/sessions ${DEPLOY_PATH}/storage/framework/views"
-
       - name: Set Directory Ownership for Apache
         run: |
           set -euo pipefail
@@ -147,7 +138,7 @@ jobs:
           DEPLOY_PATH="${DEPLOY_PATH%/}"
           ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
             "${{ vars.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            "sudo chown -R apache:apache ${DEPLOY_PATH} && sudo chmod -R 775 ${DEPLOY_PATH}/storage"
+            "sudo mkdir -p ${DEPLOY_PATH}/storage/app/public/canvas ${DEPLOY_PATH}/storage/logs ${DEPLOY_PATH}/storage/framework/cache/data ${DEPLOY_PATH}/storage/framework/sessions ${DEPLOY_PATH}/storage/framework/views && sudo chown -R apache:apache ${DEPLOY_PATH} && sudo chmod -R 775 ${DEPLOY_PATH}/storage && sudo chmod -R 775 ${DEPLOY_PATH}/bootstrap/cache"
 
       - name: Clear and Cache Laravel
         run: |
