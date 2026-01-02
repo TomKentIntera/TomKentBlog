@@ -37,31 +37,12 @@ jobs:
           cp -r frontend/dist/* backend/public/
 
       - name: Setup SSH
-        env:
-          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          # Write SSH key using environment variable (better handling of multiline secrets)
-          echo "$SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          # Verify key file was created correctly (check first and last lines without exposing content)
-          echo "Key file created. First line: $(head -1 ~/.ssh/deploy_key)"
-          echo "Last line: $(tail -1 ~/.ssh/deploy_key)"
-          echo "Key file size: $(wc -c < ~/.ssh/deploy_key) bytes"
-          echo "Key file line count: $(wc -l < ~/.ssh/deploy_key) lines"
-          # Verify key file is readable by SSH
-          if ssh-keygen -l -f ~/.ssh/deploy_key > /dev/null 2>&1; then
-            echo "SSH key format is valid"
-            ssh-keygen -l -f ~/.ssh/deploy_key
-          else
-            echo "ERROR: SSH key format is invalid"
-            exit 1
-          fi
-          # Add host to known_hosts
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
           touch ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
           ssh-keyscan -p "${{ secrets.DEPLOY_PORT || 22 }}" -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Deploy Backend Files via rsync
@@ -79,9 +60,7 @@ jobs:
           fi
           # Remove trailing slash for consistent rsync behavior
           DEPLOY_PATH="${DEPLOY_PATH%/}"
-          echo "Deploying to: $DEPLOY_PATH"
-          # Use explicit paths to ensure we only sync to the target directory
-          rsync -avz --delete \
+          rsync -az --delete \
             --exclude='.git' \
             --exclude='node_modules' \
             --exclude='vendor' \
@@ -90,7 +69,7 @@ jobs:
             --exclude='storage/framework/cache/*' \
             --exclude='storage/framework/sessions/*' \
             --exclude='storage/framework/views/*' \
-            -e "ssh -v -p ${{ secrets.DEPLOY_PORT || 22 }} -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts" \
+            -e "ssh -p ${{ secrets.DEPLOY_PORT || 22 }} -i ~/.ssh/id_ed25519" \
             ./backend/ \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${DEPLOY_PATH}/"
 
@@ -99,7 +78,7 @@ jobs:
           set -euo pipefail
           DEPLOY_PATH="${{ vars.DEPLOY_BACKEND_PATH }}"
           DEPLOY_PATH="${DEPLOY_PATH%/}"
-          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "cd ${DEPLOY_PATH} && composer install --no-dev --optimize-autoloader --no-interaction"
 
@@ -108,7 +87,7 @@ jobs:
           set -euo pipefail
           DEPLOY_PATH="${{ vars.DEPLOY_BACKEND_PATH }}"
           DEPLOY_PATH="${DEPLOY_PATH%/}"
-          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "cd ${DEPLOY_PATH} && php artisan migrate --force"
 
@@ -117,7 +96,6 @@ jobs:
           set -euo pipefail
           DEPLOY_PATH="${{ vars.DEPLOY_BACKEND_PATH }}"
           DEPLOY_PATH="${DEPLOY_PATH%/}"
-          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "cd ${DEPLOY_PATH} && php artisan config:cache && php artisan route:cache && php artisan view:cache"
-
