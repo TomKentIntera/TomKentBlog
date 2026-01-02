@@ -48,10 +48,6 @@ jobs:
           touch ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
           ssh-keyscan -p "${{ secrets.DEPLOY_PORT || 22 }}" -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
-          # Test SSH connection
-          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            "echo 'SSH connection successful'"
 
       - name: Deploy Backend Files via rsync
         run: |
