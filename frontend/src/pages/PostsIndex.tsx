@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchPosts, type PostListItem } from '../api/posts'
-import { BlogPostPreview } from '../components/BlogPostPreview'
+import { HeroPost } from '../components/HeroPost'
+import { PostListItem as PostListItemComponent } from '../components/PostListItem'
 
 export function PostsIndex() {
   const [posts, setPosts] = useState<PostListItem[] | null>(null)
@@ -9,7 +10,7 @@ export function PostsIndex() {
   useEffect(() => {
     let cancelled = false
 
-    fetchPosts()
+    fetchPosts(20) // Fetch more posts for the list
       .then((res) => {
         if (!cancelled) setPosts(res.data)
       })
@@ -22,8 +23,8 @@ export function PostsIndex() {
     }
   }, [])
 
-  if (error) return <div style={{ color: 'crimson' }}>{error}</div>
-  if (!posts) return <div>Loading…</div>
+  if (error) return <div style={{ color: 'crimson', padding: '40px' }}>{error}</div>
+  if (!posts) return <div style={{ padding: '40px' }}>Loading…</div>
 
   const sorted = [...posts].sort((a, b) => {
     const aKey = a.published_at ?? ''
@@ -31,26 +32,30 @@ export function PostsIndex() {
     return bKey.localeCompare(aKey)
   })
 
-  return (
-    <div style={{ display: 'grid', gap: 16 }}>
-      <h1 style={{ margin: 0 }}>Recent posts</h1>
-      {sorted.length === 0 ? (
+  if (sorted.length === 0) {
+    return (
+      <div style={{ padding: '40px', maxWidth: 800, margin: '0 auto' }}>
         <p>No published posts yet.</p>
-      ) : (
-        <ul
-          style={{
-            listStyle: 'none',
-            padding: 0,
-            margin: 0,
-            display: 'grid',
-            gap: 16,
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-          }}
-        >
-          {sorted.map((p) => (
-            <BlogPostPreview key={p.id} post={p} />
+      </div>
+    )
+  }
+
+  const [heroPost, ...restPosts] = sorted
+
+  return (
+    <div style={{
+      maxWidth: 1000,
+      margin: '0 auto',
+      padding: '0 40px 60px',
+    }}>
+      {heroPost && <HeroPost post={heroPost} />}
+      
+      {restPosts.length > 0 && (
+        <div>
+          {restPosts.map((post) => (
+            <PostListItemComponent key={post.id} post={post} />
           ))}
-        </ul>
+        </div>
       )}
     </div>
   )
