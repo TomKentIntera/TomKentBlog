@@ -48,7 +48,7 @@ jobs:
       - name: Deploy Backend Files via rsync
         run: |
           set -euo pipefail
-          DEPLOY_PATH="${{ secrets.DEPLOY_BACKEND_PATH }}"
+          DEPLOY_PATH="${{ vars.DEPLOY_BACKEND_PATH }}"
           # Validate that path is absolute and not empty
           if [[ ! "$DEPLOY_PATH" =~ ^/ ]]; then
             echo "Error: DEPLOY_BACKEND_PATH must be an absolute path (starting with /)"
@@ -78,7 +78,7 @@ jobs:
       - name: Install Composer Dependencies
         run: |
           set -euo pipefail
-          DEPLOY_PATH="${{ secrets.DEPLOY_BACKEND_PATH }}"
+          DEPLOY_PATH="${{ vars.DEPLOY_BACKEND_PATH }}"
           DEPLOY_PATH="${DEPLOY_PATH%/}"
           ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
@@ -87,7 +87,7 @@ jobs:
       - name: Run Migrations
         run: |
           set -euo pipefail
-          DEPLOY_PATH="${{ secrets.DEPLOY_BACKEND_PATH }}"
+          DEPLOY_PATH="${{ vars.DEPLOY_BACKEND_PATH }}"
           DEPLOY_PATH="${DEPLOY_PATH%/}"
           ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
@@ -96,7 +96,7 @@ jobs:
       - name: Clear and Cache Laravel
         run: |
           set -euo pipefail
-          DEPLOY_PATH="${{ secrets.DEPLOY_BACKEND_PATH }}"
+          DEPLOY_PATH="${{ vars.DEPLOY_BACKEND_PATH }}"
           DEPLOY_PATH="${DEPLOY_PATH%/}"
           ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
