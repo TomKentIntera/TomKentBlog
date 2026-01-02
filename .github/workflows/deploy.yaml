@@ -41,9 +41,13 @@ jobs:
           set -euo pipefail
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          # Write SSH key (handle both ed25519 and RSA formats)
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          # Write SSH key (preserve formatting for RSA keys)
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
+          # Verify key file was created correctly (check first and last lines without exposing content)
+          echo "Key file created. First line: $(head -1 ~/.ssh/deploy_key)"
+          echo "Last line: $(tail -1 ~/.ssh/deploy_key)"
+          echo "Key file size: $(wc -c < ~/.ssh/deploy_key) bytes"
           # Add host to known_hosts
           touch ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
@@ -75,7 +79,7 @@ jobs:
             --exclude='storage/framework/cache/*' \
             --exclude='storage/framework/sessions/*' \
             --exclude='storage/framework/views/*' \
-            -e "ssh -p ${{ secrets.DEPLOY_PORT || 22 }} -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
+            -e "ssh -v -p ${{ secrets.DEPLOY_PORT || 22 }} -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts" \
             ./backend/ \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${DEPLOY_PATH}/"
 
