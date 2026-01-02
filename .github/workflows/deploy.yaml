@@ -113,15 +113,6 @@ jobs:
             "${{ vars.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "cd ${DEPLOY_PATH} && php artisan migrate --force"
 
-      - name: Set Directory Ownership for Apache
-        run: |
-          set -euo pipefail
-          DEPLOY_PATH="${{ vars.DEPLOY_BACKEND_PATH }}"
-          DEPLOY_PATH="${DEPLOY_PATH%/}"
-          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
-            "${{ vars.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            "sudo chown -R apache:apache ${DEPLOY_PATH}"
-
       - name: Publish Canvas Assets
         run: |
           set -euo pipefail
@@ -130,6 +121,15 @@ jobs:
           ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
             "${{ vars.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "cd ${DEPLOY_PATH} && php artisan vendor:publish --tag=canvas-assets --force"
+
+      - name: Set Directory Ownership for Apache
+        run: |
+          set -euo pipefail
+          DEPLOY_PATH="${{ vars.DEPLOY_BACKEND_PATH }}"
+          DEPLOY_PATH="${DEPLOY_PATH%/}"
+          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
+            "${{ vars.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "sudo chown -R apache:apache ${DEPLOY_PATH}"
 
       - name: Clear and Cache Laravel
         run: |
