@@ -86,6 +86,15 @@ jobs:
             ./backend/ \
             "${{ vars.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${DEPLOY_PATH}/"
 
+      - name: Set Directory Ownership
+        run: |
+          set -euo pipefail
+          DEPLOY_PATH="${{ vars.DEPLOY_BACKEND_PATH }}"
+          DEPLOY_PATH="${DEPLOY_PATH%/}"
+          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
+            "${{ vars.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "sudo chown -R apache:apache ${DEPLOY_PATH}"
+
       - name: Install Composer Dependencies
         run: |
           set -euo pipefail
