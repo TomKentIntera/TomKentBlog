@@ -86,14 +86,14 @@ jobs:
             ./backend/ \
             "${{ vars.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${DEPLOY_PATH}/"
 
-      - name: Set Directory Ownership
+      - name: Set Ownership for Composer
         run: |
           set -euo pipefail
           DEPLOY_PATH="${{ vars.DEPLOY_BACKEND_PATH }}"
           DEPLOY_PATH="${DEPLOY_PATH%/}"
           ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
             "${{ vars.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            "sudo chown -R apache:apache ${DEPLOY_PATH}"
+            "sudo chown -R ${{ vars.DEPLOY_USER }}:${{ vars.DEPLOY_USER }} ${DEPLOY_PATH}"
 
       - name: Install Composer Dependencies
         run: |
@@ -103,6 +103,15 @@ jobs:
           ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
             "${{ vars.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "cd ${DEPLOY_PATH} && composer install --no-dev --optimize-autoloader --no-interaction"
+
+      - name: Set Directory Ownership for Apache
+        run: |
+          set -euo pipefail
+          DEPLOY_PATH="${{ vars.DEPLOY_BACKEND_PATH }}"
+          DEPLOY_PATH="${DEPLOY_PATH%/}"
+          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
+            "${{ vars.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "sudo chown -R apache:apache ${DEPLOY_PATH}"
 
       - name: Run Migrations
         run: |
