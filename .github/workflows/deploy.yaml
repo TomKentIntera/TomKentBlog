@@ -40,10 +40,18 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
+          chmod 700 ~/.ssh
+          # Write SSH key (handle both ed25519 and RSA formats)
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # Add host to known_hosts
           touch ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
           ssh-keyscan -p "${{ secrets.DEPLOY_PORT || 22 }}" -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+          # Test SSH connection
+          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "echo 'SSH connection successful'"
 
       - name: Deploy Backend Files via rsync
         run: |
@@ -71,7 +79,7 @@ jobs:
             --exclude='storage/framework/cache/*' \
             --exclude='storage/framework/sessions/*' \
             --exclude='storage/framework/views/*' \
-            -e "ssh -p ${{ secrets.DEPLOY_PORT || 22 }} -i ~/.ssh/id_ed25519" \
+            -e "ssh -p ${{ secrets.DEPLOY_PORT || 22 }} -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
             ./backend/ \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${DEPLOY_PATH}/"
 
@@ -80,7 +88,7 @@ jobs:
           set -euo pipefail
           DEPLOY_PATH="${{ vars.DEPLOY_BACKEND_PATH }}"
           DEPLOY_PATH="${DEPLOY_PATH%/}"
-          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
+          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "cd ${DEPLOY_PATH} && composer install --no-dev --optimize-autoloader --no-interaction"
 
@@ -89,7 +97,7 @@ jobs:
           set -euo pipefail
           DEPLOY_PATH="${{ vars.DEPLOY_BACKEND_PATH }}"
           DEPLOY_PATH="${DEPLOY_PATH%/}"
-          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
+          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "cd ${DEPLOY_PATH} && php artisan migrate --force"
 
@@ -98,7 +106,7 @@ jobs:
           set -euo pipefail
           DEPLOY_PATH="${{ vars.DEPLOY_BACKEND_PATH }}"
           DEPLOY_PATH="${DEPLOY_PATH%/}"
-          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/id_ed25519 \
+          ssh -p "${{ secrets.DEPLOY_PORT || 22 }}" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "cd ${DEPLOY_PATH} && php artisan config:cache && php artisan route:cache && php artisan view:cache"
 
