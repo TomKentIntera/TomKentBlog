@@ -73,6 +73,7 @@ jobs:
           # Remove trailing slash for consistent rsync behavior
           DEPLOY_PATH="${DEPLOY_PATH%/}"
           rsync -az --delete \
+            --rsync-path="sudo rsync" \
             --exclude='.git' \
             --exclude='node_modules' \
             --exclude='vendor' \
